@@ -1,0 +1,224 @@
+####9.20 빅데이터####
+
+
+library(tidyverse)
+
+ggplot(mpg, aes(displ))+geom_freqpoly(binwidth=0.5)
+ggplot(mpg, aes(displ))+geom_freqpoly(binwidth=0.5)+facet_wrap(~drv)
+ggplot(mpg, aes(displ, color=drv, shpae=drv))+geom_freqpoly(binwidth=0.5)
+
+#히스토그램을 drv별로 색깔로 나눠서 표시해줌.
+ggplot(mpg, aes(displ, color=drv))+geom_histogram(binwidth = 0.5)
+#drv별로 displ의 분포를 보여줌. (wrap에 들은 것만 쪼갬)
+ggplot(mpg, aes(displ))+geom_histogram(binwidth = 0.5)+facet_wrap(~drv, ncol=1)
+#다른 모든 변수들에 대해 drv별 그래프 -> 위의 코딩과 같아짐
+ggplot(mpg, aes(displ))+geom_histogram(binwidth = 0.5)+facet_grid(drv~.)
+#cyl에 대해 drv별 그래프 -> cyl4개 drv3개 -> 총 12개의 그래프가 그려진다.
+ggplot(mpg, aes(displ))+geom_histogram(binwidth = 0.5)+facet_grid(drv~cyl)
+
+
+
+#두 개의 연속변수 : geom_point와 geom_smooth
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_smooth()
+#파란 선은 전체 분포에 대한 선, 회색 부분은 error
+
+#geom_smooth()함수의 중요한 인자는 method로 smooth line을 찾는 방법을 지정하는 것이다
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_smooth(span = 0.2)
+#span : 세세한 변화를 얼마나 감지하느냐. -> 숫자가 적을수록 더 세세하게 감지함
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_smooth(span = 5)
+
+#displ을 x, hwy를 y로 한 회귀선 그리기
+ggplot(mpg, aes(displ,hwy))+geom_point()+geom_smooth(method="lm")
+
+
+##time weries with line and path plots##
+
+economics
+# A tibble: 574 x 6
+date         pce    pop psavert uempmed unemploy
+<date>     <dbl>  <int>   <dbl>   <dbl>    <int>
+  1 1967-07-01  507. 198712    12.5    4.50     2944
+2 1967-08-01  510. 198911    12.5    4.70     2945
+3 1967-09-01  516. 199113    11.7    4.60     2958
+4 1967-10-01  513. 199311    12.5    4.90     3143
+5 1967-11-01  518. 199498    12.5    4.70     3066
+6 1967-12-01  526. 199657    12.1    4.80     3018
+7 1968-01-01  532. 199808    11.7    5.10     2878
+8 1968-02-01  534. 199920    12.2    4.50     3001
+9 1968-03-01  545. 200056    11.6    4.10     2877
+10 1968-04-01  545. 200208    12.2    4.60     2709
+# ... with 564 more rows
+
+#date타입: 날짜를 R로 불러올 때 그냥 숫자가 아닌 날짜로 인식함.
+
+#unemployment rate를 날짜별로 계산하기 : 시계열자료! (시간별로 축적된 자료)
+ggplot(economics, aes(date, unemploy/pop))+geom_point()
+#2010년에 실업률이 대폭 상승함.
+#시계열 자료의 경우 geom_point보다 line이 더 조음
+ggplot(economics, aes(date, unemploy/pop))+geom_line()
+ggplot(economics, aes(date, uempmed))+geom_line()
+
+?economics
+#unemploy와 uempmed의 관계 찾기
+ggplot(economics, aes(unemploy/pop, uempmed))+geom_point()
+#unemploy가 높을수록 uempmed 기간이 길어지는 경향을 보임.
+#그러나 시대를 알 수 없어 이 그림에 시대를 나타내는 line을 추가한다.
+ggplot(economics, aes(unemploy/pop, uempmed))+geom_line()
+ggplot(economics, aes(unemploy/pop, uempmed))+geom_path()
+#geom_line과 path의 차이 : path는 자료 순서대로 이어주고, 
+#line은 자료를 x값에 대해 sorting을 먼저 하고 그 순서대로 이어줌.
+#-> 날짜 순서대로 안되어있어도 line을 쓰면 날짜순으로 선이 이어지게 됨.
+
+ggplot(economics, aes(unemploy/pop, uempmed))+geom_path()+geom_point()
+
+#이 plot 에 시간 표시하기 -> 연도별로 색깔을 넣는다
+ggplot(economics, aes(unemploy/pop, uempmed))+geom_path()+
+  geom_point(aes(color=lubridate :: year(date)))
+#color에 categorical 말고 연속변수가 지정이 되어서 색깔이 특정되어 있지 않고
+#년도가 올라갈 수록 색이 밝아짐.
+#그러나 path에는 지정안하고 point에만 지정했기 때문에 point색만 바뀐다.
+#각각의 geom에서 aes를 잡으면 그 geom에만 해당되고, 맨 앞에서 잡으면 모든 geom에 해당된다.
+# :: 표시: lubridate 패키지 안에 year라는 함수를 써라
+
+ggplot(economics, aes(unemploy/pop, uempmed, color=lubridate::year(date)))+geom_path()+
+  geom_point()
+#이 경우에는 맨 처음에 aes 지정했으므로 모든 geom에 적용된다.
+
+
+temp <- lubridate::year(economics$date)
+temp
+#temp에는 년도가 들어가게 됨. 
+#lubridate : tidyverse 패키지 함수
+
+
+
+#####################################
+#####Lecture 6 - ggplot2 - part2#####
+#####################################
+
+
+ggplot(mpg, aes(cty, hwy))+geom_point()
+p <- ggplot(mpg, aes(cty, hwy))+geom_point()
+
+#lable 바꾸기
+p+xlab("City driving(mpg)")+ylab("Highway")
+#xlab : x lable의 약자.
+
+p+xlab(NULL)+ylab(NULL)
+#x lable 없애버리고 lable 쓸 공간까지 없애버림.그래프를 넓게 그려야하는 경우에 사용.
+p
+range(mpg$cty)
+range(mpg$hwy)
+
+#x축의 범위 지정하기
+p+xlim(0,40)
+#0이 최소고 40을 최대로 지정해두면 양쪽에 어느정도의 margin을 잡아줌.
+p+xlim(0,40)+ylim(0,30)
+
+
+#jittering 각 점에 노이즈를 줌.
+p+geom_jitter()
+ggplot(mpg, aes(cty, hwy))+geom_jitter()
+ggplot(mpg, aes(drv, hwy))+geom_point()
+ggplot(mpg, aes(drv, hwy))+geom_jitter()
+ggplot(mpg, aes(drv, hwy))+geom_jitter(width=0.25)
+
+#x가 categorical 변수인데 데이터들 중 나타내고 싶은 것만 나타낼 때.
+ggplot(mpg, aes(drv, hwy))+geom_jitter(width=0.25)+
+  xlim("4","f")
+
+#lower limit은 0, upper는 안정할테니 니맘대로 해라는 뜻
+ggplot(mpg, aes(drv, hwy))+geom_jitter(width=0.25)+
+  ylim(0,NA)
+
+##결측치제거
+a <- rnorm(10)
+a[1] <- NA
+a
+mean(a) # => NA
+mean(a, na.rm=TRUE) # => 결측치 빼고 계산
+
+
+class(p)
+summary(p)
+
+data: manufacturer, model, displ, year, cyl, trans, drv, cty,
+hwy, fl, class [234x11]
+mapping:  x = cty, y = hwy
+faceting: <ggproto object: Class FacetNull, Facet>
+  compute_layout: function
+draw_back: function
+draw_front: function
+draw_labels: function
+draw_panels: function
+finish_data: function
+init_scales: function
+map: function
+map_data: function
+params: list
+render_back: function
+render_front: function
+render_panels: function
+setup_data: function
+setup_params: function
+shrink: TRUE
+train: function
+train_positions: function
+train_scales: function
+vars: function
+super:  <ggproto object: Class FacetNull, Facet>
+  -----------------------------------
+  geom_point: na.rm = FALSE  ##geom_point 산점도
+stat_identity: na.rm = FALSE
+position_identity 
+
+
+#geom_bar
+drugs <- data.frame(drug=letters[1:3], effect=c(4.2,9.7,6.1))
+drugs
+ggplot(drugs, aes(drug))+geom_bar()
+ggplot(drugs, aes(drug, effect))+geom_bar()
+# ->이렇게 하면 ggplot의 geom_bar는 x축인 drug의 count를 y축에 표현해야하는데
+#그러지 못해서 에러가 뜸. (default로 stat_count 사용) y축을 특정변수로 설정하려면 stat="identity" 넣어줘야함!
+ggplot(drugs, aes(drug, effect))+geom_bar(stat="identity")
+
+p <- ggplot(drugs, aes(drug))+geom_bar()
+summary(p)
+data: drug, effect [3x2]
+mapping:  x = drug
+faceting: <ggproto object: Class FacetNull, Facet>
+  compute_layout: function
+draw_back: function
+draw_front: function
+draw_labels: function
+draw_panels: function
+finish_data: function
+init_scales: function
+map: function
+map_data: function
+params: list
+render_back: function
+render_front: function
+render_panels: function
+setup_data: function
+setup_params: function
+shrink: TRUE
+train: function
+train_positions: function
+train_scales: function
+vars: function
+super:  <ggproto object: Class FacetNull, Facet>
+  -----------------------------------
+  geom_bar: width = NULL, na.rm = FALSE
+stat_count: width = NULL, na.rm = FALSE
+position_stack 
+
+p1 <- ggplot(drugs, aes(drug, effect))+geom_bar(stat="identity")
+summary(p1)
