@@ -1,0 +1,188 @@
+###11/5 빅데이터###
+
+library(tidyverse)
+library(nycflights13)
+
+df <- tibble(A=rep(LETTERS[1:3], each=4),
+             B=rpois(12,10))
+df
+
+#grouping 안한 상태
+df %>% mutate(prop_B=B/sum(B), sum_B=sum(B))
+#-> 데이터 전체에서의 비율과 데이터 전체의 sum이 나옴.
+#group별 sum 보기
+df %>% group_by(A) %>% mutate(prop_B=B/sum(B), sum_B=sum(B))
+#=> 그룹별로 prop_B의 합이 1이 된다!
+
+popular_dests <- flights %>% group_by(dest) %>% 
+  filter(n()>365) 
+
+#그룹별 새로운 변수 생성
+popular_dests %>%
+  filter(arr_delay>0) %>%
+  mutate(prop_delay=arr_delay/sum(arr_delay), sum_delay=sum(arr_delay)) %>%
+  select(year:day, dest, arr_delay, prop_delay, sum_delay)
+#-> destination이 같으면 sum_delay가 같음.
+
+
+
+##data import
+#기본 함수들에서 .대신 _를 쓰면 거의 같은 역할을 함.
+heights <- read_csv("heights.csv")
+Parsed with column specification:
+  cols(
+    earn = col_double(),
+    height = col_double(),
+    sex = col_character(),
+    ed = col_integer(),
+    age = col_integer(),
+    race = col_character()
+  )
+#맨 첫번째줄은 무조건 변수이름으로 받아들임.
+#-> read.csv와 다르게 read_csv는 각각 어떤 변수로 읽었는지를 알려줌.
+#그리고 read.csv는 문자형을 factor로 읽는데 read_csv는 tibble데이터로, character로 읽는다.
+
+
+#skip=n 함수 : 자료의 위에 몇줄이 쓸데없는 글일때 그 부분 빼고 자료로 읽어들임.
+heights2 <- read_csv("heights.csv", skip=3)
+Parsed with column specification:
+  cols(
+    `30000` = col_double(),
+    `63.62919774` = col_double(),
+    female = col_character(),
+    `16` = col_integer(),
+    `29` = col_integer(),
+    white = col_character()
+  )
+#무조건 첫번째줄이 변수명이 되어서 데이터 한 줄이 변수명이 되어버린다.
+#이 때 read.csv는 직접 쳐봐야 잘못된 걸 알 수 있는데 read_csv는 알아서 알려줌.
+
+#read_csv에서 col_names=FALSE를 쓰면 첫줄부터 자료로 읽는다.
+heights3 <- read_csv("heights.csv", col_names=FALSE)
+Parsed with column specification:
+  cols(
+    X1 = col_character(),
+    X2 = col_character(),
+    X3 = col_character(),
+    X4 = col_character(),
+    X5 = col_character(),
+    X6 = col_character()
+  )
+#=> 변수명도 자료로 읽으라고 하면 자료의 첫줄이 문자이므로 아예 다 문자변수로 인식함.
+#column name은 자동으로 지정.
+#colname지정할 때는 col_names=c("a","b","c") 이런식으루
+
+#interger 변수에 특정 문자가 있는 경우.
+#missing value때문에 계산이 안되므로 character 변수로 읽어들임.
+#이때 na="." 옵션을 넣으면 integer로 들어가고 . 을 NA로 읽어서 저장함.
+
+
+#read_csv가 read.csv보다 빠르고, 데이터를 얼마나 읽었는지 알 수 있음. 
+
+
+##parsing a vector
+#parse_type 함수 : character vector로 읽은 후 type형태로 바꿔줌.
+
+str(parse_logical(c("TRUE", "FALSE", "NA")))
+logi [1:3] TRUE FALSE NA
+
+parse_integer(c("1","231",".","456"), na=".")
+[1]   1 231  NA 456
+
+x <- parse_integer(c("123","345","abc","123.45")) #parsing이 안되는 경우 특정문자를 NA로 처리.
+Warning: 2 parsing failures.
+row # A tibble: 2 x 4 col     row   col expected               actual expected   <int> <int> <chr>                  <chr>  actual 1     3    NA an integer             abc    row 2     4    NA no trailing characters .45   
+
+Warning message:
+  In rbind(names(probs), probs_f) :
+  
+  number of columns of result is not a multiple of vector length (arg 1)
+
+x
+[1] 123 345  NA  NA
+attr(,"problems")
+# A tibble: 2 x 4
+row   col expected               actual
+<int> <int> <chr>                  <chr> 
+  1   3    NA an integer             abc   
+2   4    NA no trailing characters .45   
+#-> 문제가 있는데 3,4번째 row에 문제가 있다.
+
+#자료의 문제만 보고시으면 problems(테이블)
+problems(x)
+
+
+#소수점이 ,으로 쓰여져있는 자료의 경우. locale을 이용. default는 .을 이용함
+
+##오늘 부분은 pdf만 보고 그냥 지나간 부분이 많으니까 공부할 때 꼭 pdf 같이 보깅!##
+
+parse_double("1.23")
+parse_double("1,23" , locale=locale(decimal_mark=","))
+
+#parse_number() : 숫자 앞, 뒤에 있는 특수문자들을 가려냄.
+parse_number("$100")
+
+#grouping_mark 옵션으로 grouping 문자 가려내기. (default는 ,)
+parse_number("$123.456.789", locale = locale(grouping_mark="."))
+
+
+
+#strings
+#charToRaw() : 문자를 16진수로 표현
+charToRaw("Hadley")
+
+#parse_character() 이용하여 encoding방식 지정
+
+
+#factor에서 levels -> 잘못된 데이터를 잡아줌.
+fruit <- c("apple","banana")
+parse_factor(c("apple","banana","bananana"), levels=fruit)
+
+
+#날짜와 관련된 함수들 : pdf로 공부하기
+
+
+#큰 파일에서 발생가능한 문제들.
+# 함수가 처음 1000개까지만 읽고 판단해서 생기는 문제
+
+#readr 안에 있는 데이터 쓰기
+challenge <- read_csv(readr_example("challenge.csv"))
+#readr_example() : readr package의 example파일을 찾아줌.
+
+#이 데이터는 1000개 이후에 y변수에 날짜데이터가 있는데, 처음부터 1000번째까지 NA여서
+#1000개까지만 읽고 r에서 NA로 읽어들여서 type을 지정할 수 없음. (큰 파일에서 발생가능한 문제)
+#x변수의 경우 1000까지는 integer고 1000개 이후로는 소수점이여서
+#1000 이전의 데이터들로만 판단해서 integer 변수로 판단하고 뒤에 소숫점 값들을 NA로 읽어들임.
+
+#해결방법: column의 타입을 미리 지정 : col_types
+challenges <- read_csv(readr_example("challenge.csv"),
+                       col_types=cols(x=col_double(), y=col_date()))
+
+challenge[999:1002,]
+# A tibble: 4 x 2
+x y         
+<int> <chr>     
+  1  4569 NA        
+2  4548 NA        
+3    NA 2015-01-16
+4    NA 2018-05-18
+challenges[999:1002,]
+# A tibble: 4 x 2
+x y         
+<dbl> <date>    
+  1 4569.    NA        
+2 4548.    NA        
+3    0.238 2015-01-16
+4    0.412 2018-05-18
+
+#이 문제에 대한 다른 해결방법: guess_max사용. (default가 1000인데
+# 1001번째까지 읽으면 1001번째 데이터가 x=double, y=date이므로 이걸 읽어서 잘 인식한다.)
+
+challenge2 <- read_csv(readr_example("challenge.csv"), guess_max=1001)
+Parsed with column specification:
+  cols(
+    x = col_double(),
+    y = col_date(format = "")
+  )
+
+#note the column type : type_convert(테이블)
