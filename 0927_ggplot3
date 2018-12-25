@@ -1,0 +1,216 @@
+###9월 27일 빅데이터###
+
+
+library(tidyverse)
+
+##Toolbox##
+
+#geom_text()를 위한 data set 만들기
+df <- data.frame(
+  x <- c(6,2,12),
+  y <- c(4, 8, 12),
+  label=c("a","b","c")
+)
+df
+#dataframe에서 character는 factor로 들어감
+class(df$label)
+
+p <- ggplot(df, aes(x, y, label=label)) + labs(x=NULL, y=NULL)
+#labs : x축이랑 y축 한꺼번에 설정 / 첫번째 label : 옵션, 두번째 label: 변수명
+p
+p+geom_point()
+#ggtitle : 타이틀 지정, 제목은 항상 왼쪽부터 정렬되어서 출력됨.
+p+geom_point()+ggtitle("point")
+#geom_point : 각각의 point 위치에 label로 지정된 문자가 점대신에 plot에 찍힘.
+p+geom_text()+ggtitle("text")
+
+p+geom_bar()+ggtitle("bar")
+#x변수의 count를 세서 bar를 그려야하는데 y변수가 설정되어 있어서 에러가 남.
+
+#identity: y값을 x를 count한 값을 넣지 말고 y값 있는 그대로 사용해라.
+p+geom_bar(stat="identity")+ggtitle("bar")
+
+#tile: 점을 중심으로 네모박스를 그려줌.
+p+geom_tile()+geom_point(color="red")
+
+
+#raster: 전체 공간을 점에 맞게 나눔. 모든 x축이 채워짐. 타일크기가 모두 같음.
+#(tile: 무조건 점 중심으로 정사각형. 전체 그래프 x축에 빈공간 존재)
+p+geom_raster()+geom_point(color="red")
+
+
+#rect를 쓰는 경우 x의 min,max와 y의 min,max를 지정해줘야댐.
+#임의로 설정되어있는 공간 안에 사각형을 그리는 것이기 때문에 특정 dataset이 없어도 됨.
+p+geom_rect(aes(xmin=2.5, xmax=10, ymin=4, ymax=7))
+
+
+#aes mapping 안에서 color 지정 -> red를 변수로 인식함
+#따라서 빨간색을 할당하지 않고 그냥 red라는 이름의 임의의 색깔을 줌.
+p+geom_tile()+geom_point(aes(color="yellow"))
+#aes 밖에서 지정할 경우 그 색깔이 그대로 나온다.
+p+geom_tile()+geom_point(color="yellow")
+
+#rectangle 색깔 바꾸기
+p+geom_rect(aes(xmin=2.5, xmax=10, ymin=4, ymax=7), color="blue")
+#이 경우 rectangle 전체가 아니고 네모의 테두리만 파랑이로 바꾸는 역할을 함.
+
+#전체의 색깔을 바꾸기 위해서는 color 대신 fill을 써야한다!
+p+geom_rect(aes(xmin=2.5, xmax=10, ymin=4, ymax=7), fill="blue")
+p+geom_rect(aes(xmin=2.5, xmax=10, ymin=4, ymax=7), color="blue", fill="pink")
+
+#aesthetic mapping:그림을 그리고자 하는 변수와 실제 그래프를 매칭(mapping)해주는 역할!
+
+
+df
+
+#x축 순서대로 sorting 후 그래프 그리기
+p+geom_point()+geom_line()
+
+#말그대로 데이터 순서대로 이어 그리기
+p+geom_point()+geom_path()
+
+#점을 line으로 바꾼 다음 각각의 점에서 y=0로 수직선을 그어 그 안을 색칠함
+p+geom_point()+geom_area()
+
+#path를 그린 뒤 첫번째와 마지막 점을 이은 후 생기는 공간을 칠해줌.
+p+geom_point()+geom_polygon()
+
+df1 <- data.frame(
+  x <- c(1, 1, 12,12),
+  y <- c(4, 1, 4, 1) )
+ggplot(df1, aes(x,y))+geom_line()
+ggplot(df1, aes(x,y))+geom_path()
+ggplot(df1, aes(x,y))+geom_polygon()
+ggplot(df1, aes(x,y))+geom_polygon(fill="purple")
+
+
+
+p+geom_text()
+df <- data.frame(x=1, y=3:1, FAMILY=c("sans","serif","mono"))
+df
+ggplot(df, aes(x,y))+geom_text()
+#이 경우 글씨를 뭘 쓸지 지정 안해줬기 때문에 에러뜸
+
+#두 경우 모두 같은게 나옴!
+#위 식은 label 뒤에 나오는 모든 함수에 적용됨!
+ggplot(df, aes(x,y, label=FAMILY))+geom_text()
+#밑에 식은 geom_text에만 적용된다.
+ggplot(df, aes(x,y))+geom_text(aes(label=FAMILY))
+기
+#family 인자: 각 text별로 글씨체 설정하기
+ggplot(df, aes(x,y))+geom_text(aes(label=FAMILY, family=FAMILY))
+
+#face인자: 서체를 지정 -> 그냥 글씨, 눕히기, 강조하기 등 글씨체 바꾸는거랑은 다른 느낌!
+df <- data.frame(x=1, y=3:1, FACE=c("plain","bold","italic"))
+df
+ggplot(df, aes(x,y))+geom_text(aes(label=FACE, fontface=FACE))
+
+
+
+df <- data.frame( x = c(1, 1, 2, 2, 1.5), 
+                  y = c(1, 2, 1, 2, 1.5), 
+                  text = c( "bottom-left","bottom-right","top-left","top-right","center") )
+df
+
+ggplot(df, aes(x, y)) + geom_text(aes(label = text))
+#이렇게 하면 글자가 길어서 글자가 짤림.
+#이를 해결하기 이해 inward옵션 사용
+ggplot(df, aes(x, y)) + geom_text(aes(label = text), hjust="inward")
+#hjust="inward": 가로로 밖으로 나가지는 애들을 다 안으로 데리고 옴.
+
+#vjust="inward": 세로로 밖으로 나가는 애들을 안으로 데리고 옴.
+ggplot(df, aes(x, y)) + geom_text(aes(label = text), vjust="inward")
+ggplot(df, aes(x, y)) + geom_text(aes(label = text), vjust="inward", hjust="inward")
+
+#hjust="left" : 점 찍히는 자리부터 글씨가 시작하도록.
+ggplot(df, aes(x, y)) + geom_text(aes(label = text), hjust="left")
+#hjust="right" : 글씨가 끝나는 곳에 점이 찍히도록.
+
+
+
+df <- data.frame(trt = c("a", "b", "c"), resp = c(1.2, 3.4, 2.5))
+df
+ggplot(df, aes(resp, trt)) + geom_point()
+
+
+#label을 기존의 변수를 쓰지 않고 새로운 변수를 씀.
+ggplot(df, aes(resp, trt)) +
+  geom_point() + 
+  geom_text(aes(label = paste0("(", resp, ")")), nudge_y = -0.25)
+
+
+#" (",df$resp,") " :괄호안에 resp 넣고/ 그것을 한줄로 붙여라
+paste0("(", df$resp, ")")
+#paste0이 paste와 다른 점은 paste는 스페이스로 구분하는데(default) paste0은 스페이스 없이 붙여서 출력해줌.
+
+paste("(",df$resp,")")
+#이 경우 default로 빈칸으로 구분해서 붙여짐. 모든 구분이 스페이스로 이루어진다!
+
+#nudge_y=-0.25 : text를 점에서 y축쪽으로 -0.25만큼 떨어지게 그려줌. 
+
+
+#size : 글씨크기 설정
+ggplot(df, aes(resp, trt)) + 
+  geom_point() + 
+  geom_text(aes(label = paste0("(", resp, ")")),  nudge_y = -0.25, size=5) + 
+  xlim(1, 3.6)
+
+#angle: 글씨의 기울기 설정
+ggplot(df, aes(resp, trt)) + 
+  geom_point() + 
+  geom_text(aes(label = paste0("(", resp, ")")),  nudge_y = -0.25, size=5, angle=30) + 
+  xlim(1, 3.6)
+
+
+#check_overlap
+mpg
+ggplot(mpg, aes(displ, hwy)) + geom_text(aes(label = model)) + xlim(1, 8)
+#chect_overlap 옵션 : overlap되는 글씨들을 다 지워버림.
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_text(aes(label = model), check_overlap=TRUE) + 
+  xlim(1, 8)
+
+#check_overlap 주의해야 할 점: 지워지는 것들이 있기 때문에 그대로 받아들이면 안된다.
+
+
+#geom_tile 응용
+head(faithful)
+faithfuld #faithful 데이터를 정리하고 density 구해놓은 자료
+ggplot(faithful, aes(waiting, eruptions))+geom_point()
+
+#faithfuld를 이용해 density에 대한 데이터의 등고선도 만들기
+ggplot(faithfuld, aes(waiting, eruptions)) +
+  geom_tile(aes(fill=density))
+
+label <- data.frame(
+  waiting = c(55, 80), 
+  eruptions = c(2, 4.3), 
+  label = c("peak one", "peak two") )
+
+label
+
+#원래는 앞의 dataset을 이용하는데 geom_text에만 label 데이터를 쓴다고 지정해줌.
+ggplot(faithfuld, aes(waiting, eruptions)) +
+  geom_tile(aes(fill=density)) +
+  geom_text(data=label, aes(label=label))
+
+#geom_label
+ggplot(faithfuld, aes(waiting, eruptions)) +
+  geom_tile(aes(fill=density)) +
+  geom_label(data=label, aes(label=label))
+
+
+#class별로 다른 점. 그러나 데이터가 많아서 자세히 들여다봐야 정확히 알 수 있음.
+ggplot(mpg, aes(displ, hwy, color=class)) + geom_point()
+
+#보기 어려울 때 붙이는 label의 하나 : directlabels
+install.packages("directlabels")
+library(directlabels)
+
+ggplot(mpg, aes(displ, hwy, colour = class)) + 
+  geom_point(show.legend = FALSE) + 
+  directlabels::geom_dl(aes(label = class), 
+                        method = "smart.grid")
+#데이터가 있는 곳 근처에 각 데이터의 색깔을 가진 label을 붙여줌으로써 
+#어느 데이터가 어느쪽에 주로 있는지 그냥 plot보다 더 쉽게 찾을 수 있음.
+# :: directlabels library 안에 있는 geom_dl함수를 써라! -> library함수 꼭 안써도 됨.
