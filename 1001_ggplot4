@@ -1,0 +1,126 @@
+###10/1 빅데이터###
+
+library(tidyverse)
+
+ggplot(economics, aes(date, unemploy))+geom_line()
+
+presidential
+economics$date[1]
+
+presidential <- subset(presidential, start > economics$date[1])
+ggplot(economics) + 
+  geom_rect( aes(xmin = start, xmax = end, fill = party), 
+             ymin = -Inf, ymax = Inf, alpha = 0.2, data = presidential )
+#알파 옵션: 투명도!
+
+#그래프에 vertical line 그리기
+ggplot(economics) + 
+  geom_rect( aes(xmin = start, xmax = end, fill = party), 
+             ymin = -Inf, ymax = Inf, alpha = 0.2, data = presidential ) +
+  geom_vline(aes(xintercept=as.numeric(start)), data=presidential, color="grey50", alpha=0.5)
+#grey50: 0은 흰색이고 100은 검정인데 그 사이 50의 회색을 잡아라.
+
+#그래프에 텍스트 추가
+ggplot(economics) + 
+  geom_rect( aes(xmin = start, xmax = end, fill = party), 
+             ymin = -Inf, ymax = Inf, alpha = 0.2, data = presidential ) +
+  geom_vline(aes(xintercept=as.numeric(start)), data=presidential, color="grey50", alpha=0.5) +
+  geom_text(aes(x=start, y=2500, label=name), data=presidential,
+            size=3, vjust=0, hjust=0, nudge_x=50)
+
+#geom_line 추가 : line을 먼저 넣어서 x변수,y변수를 잡아서 x축 y축에 이름이 들어가게 함.
+#앞의 코드의 경우 제일 처음 x축 y축 나오는게 text여서 x에는 start, y에는 2500이 들어간다.
+ggplot(economics) + 
+  geom_line(aes(date, unemploy))+
+  geom_rect( aes(xmin = start, xmax = end, fill = party), 
+             ymin = -Inf, ymax = Inf, alpha = 0.2, data = presidential ) +
+  geom_vline(aes(xintercept=as.numeric(start)), data=presidential, color="grey50", alpha=0.5) +
+  geom_text(aes(x=start, y=2500, label=name), data=presidential,
+            size=3, vjust=0, hjust=0, nudge_x=50)
+
+#스케일 조정: scale_fill_manual
+ggplot(economics) + 
+  geom_line(aes(date, unemploy))+
+  geom_rect( aes(xmin = start, xmax = end, fill = party), 
+             ymin = -Inf, ymax = Inf, alpha = 0.2, data = presidential ) +
+  geom_vline(aes(xintercept=as.numeric(start)), data=presidential, color="grey50", alpha=0.5) +
+  geom_text(aes(x=start, y=2500, label=name), data=presidential,
+            size=3, vjust=0, hjust=0, nudge_x=50)+
+  scale_fill_manual(values=c("blue","red"))
+#scale 색깔 채우는 것을 첫번째를 파랑 두번째를 빨강으로 채워라.
+#결과: democracy는 실업률이 떨어지는 추세.
+#당에 따라 실업률이 달라짐을 알 수 있다.
+
+
+
+#그래프에 글씨(문장)넣기
+#x 인자: x축에서 글씨 시작점 / y 인자: y축에서 글씨 시작점, label=넣고싶은 글
+#strwrap : 문장에서 끊고싶은 숫자마다 줄을 바꿈. 40을 지정하면 글자수 40당 줄을 바꾼다.
+a <-strwrap("Unemployment rates in the US have varied a lot over the years", 40)
+paste(a, collapse="\n")
+#\n : 엔터와 같은 기능. 위의 경우 두 문장 구별을 엔터로 구분하게 된다.
+cat(paste(a, collapse="\n"))
+#그냥 출력하면 \n이 그대로 나오지만, consol로 결과를 보여주는 cat을 쓰면 문장 사이를 띄워줌.
+#(나머지 부분은 pdf 참고!!)
+
+
+
+
+diamonds
+#먼저 산점도로 carat과 price 비교
+ggplot(diamonds, aes(carat, price))+geom_point()
+#로그변환 - r에서 기본로그는 자연로그이므로 상용로그 사용을 위해 log10을 써준다.
+ggplot(diamonds, aes(log10(carat), log10(price)))+geom_point(alpha=0.05)
+#그래프 중간중간 생기는 선이 나타나는 이유를 추론해본당
+ggplot(diamonds, aes(carat, log10(price)))+geom_point(alpha=0.01)
+
+#각 범위를 count해서 count별로 색깔을 칠해줌. count가 많을 수록 연한색
+ggplot(diamonds, aes(log10(carat), log10(price)))+geom_bin2d()
+#가운데쪽이 count가 많음을 알 수 있다.
+
+#cut별로 그래프 나눠그리기
+ggplot(diamonds, aes(log10(carat), log10(price)))+geom_bin2d()+
+  facet_wrap(~cut, nrow=1)
+
+#회귀식의 coefficient을 따와서 회귀식을 그린다.
+mod_coef <- coef(lm(log10(price)~log10(carat), data=diamonds))
+ggplot(diamonds, aes(log10(carat), log10(price)))+geom_bin2d()+
+  geom_abline(intercept=mod_coef[1], slope=mod_coef[2],
+              color="white", size=1) +
+  facet_wrap(~cut, nrow=1)
+
+library(nlme)
+data("Oxboys")
+head(Oxboys)
+Grouped Data: height ~ age | Subject
+Subject     age height Occasion
+1       1 -1.0000  140.5        1
+2       1 -0.7479  143.4        2
+3       1 -0.4630  144.8        3
+4       1 -0.1643  147.1        4
+5       1 -0.0027  147.7        5
+6       1  0.2466  150.2        6
+#Oxboys: 26명의 소년이 9번씩 측정한 데이터. 각 소년마다 어떻게 자랐는지를 봄.
+
+ggplot(Oxboys, aes(age, height))+geom_point()
+#각 아이들마다 group을 지정해서 연결하기
+ggplot(Oxboys, aes(age, height, group=Subject))+geom_line()+geom_point()
+ggplot(Oxboys, aes(age, height))+geom_line(aes(group=Subject))+geom_point()+
+  geom_smooth(method="lm", se=FALSE)
+#26명 각각의 회귀선말고 전체의 회귀선을 보고싶을 때-> geom_line안에 group 넣기
+
+#각 occasion별로 상자그림 그리기
+ggplot(Oxboys, aes(Occasion, height))+geom_boxplot()
+#occasion이 지금 categorical variable로 들어가 있으므로 boxplot이 그려진다.
+#점점 상자그림이 위로 올라감.
+
+#프로파일 그리기
+ggplot(Oxboys, aes(Occasion, height))+geom_boxplot()+geom_line()기
+#categorical이 x축으로 들어가면 그 자체가 그룹이 되어서 x축 sorting하고 그리지 않고 category별로 그림
+
+#subject별로 프로파일 그리기
+ggplot(Oxboys, aes(Occasion, height))+geom_boxplot()+geom_line(aes(group=Subject))
+
+ggplot(Oxboys, aes(age, height))+geom_boxplot()
+#이러면 경고메세지가 뜸
+#age는 연속변수이므로 잡힌 그룹이 없어 하나의 그룹이라고 판단하고 boxplot을 그려줌.
