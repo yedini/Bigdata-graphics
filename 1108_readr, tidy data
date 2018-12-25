@@ -1,0 +1,108 @@
+###11/8 빅데이터###
+
+
+library(tidyverse)
+
+challenge2 <- read_csv(readr_example("challenge.csv"),
+                       col_types=cols(.default = col_character()))
+write_csv(challenge2, "ch.csv")
+getwd()
+
+write_rds(challenge2, "ch.rds")
+A <- read_rds("ch.rds")
+#rds확장자는 꼭 r에서 열어야 한다! 단점은 rds가 파일 크기가 더 큼.
+
+
+
+##Tidy data
+table1 #cases : 결핵테스트
+table2 #table1의 한 줄을 두줄로 풀어 설명.
+table3 #변수 2개가 하나의 변수로 합쳐져서 나옴.
+table4a #case숫자에 대한 테이블형태
+table4b #pop에 대한 테이블형태
+
+
+#dataset을 tidy하게 만들기 위한 3가지의 기본 규칙.
+#1. 각 변수는 각자의 column을 가지고 있어야 한다.
+#2. 각 observation은 각자의 row를 가지고 있어야 한다.
+#3. 각 값은 각자의 cell을 가지고 있어야 한다 .
+#tidy가 가장 다루기 쉬운 자료.
+
+
+#compute rate per 10000
+table1 %>% mutate(rate= cases/population*10000)
+
+#compute cases per year
+table1 %>% count(year, wt=cases) #year를 세는데 weight를 cases로 지정. => cases가 더해짐.
+
+#visualise changes over time
+table1 %>% ggplot(aes(year, cases))+geom_line(aes(group=country))+
+  geom_point(aes(colour=country))
+
+#인구별 cases에 대한 년도별 변화
+table1 %>% mutate(rate=cases/population*10000) %>%
+  ggplot(aes(year, rate, colour=country))+
+  geom_line()+geom_point()
+
+
+
+##Spreading and gathering
+
+
+A <-gather(table4a, `1999`,`2000`, key="YEAR", value="CASE")
+#table4a의 1999,2000 테이블을 year라는 변수에 넣고, 원 테이블 안의 데이터는 case변수로 넣어라.
+
+B <-gather(table4b, `1999`,`2000`, key="YEAR", value="POPULATION")
+B
+#left join : 왼쪽 기준으로 오른쪽 데이터를 붙여라.
+left_join(A,B)
+
+table2
+spread(table2, key=type, value=count)
+
+
+table3
+#rate변수 둘로 쪼개기 -> separate 함수
+separate(table3, rate, into=c("CASE","POPULATION"))
+#separate을 하면 전환된 부분을 다 character 변수로 만듦.
+
+separate(table3, rate, into=c("CASE","POPULATION"), sep="/")
+
+#자료형을 자료에 맞게 바꿔줌.
+separate(table3, rate, into=c("CASE","POPULATION"), sep="/", convert=TRUE)
+
+#year를 두 자리씩 나누기
+separate(table3, year, into=c("a","b"), sep=2, convert=TRUE)
+
+#변수 여러개를 합치기
+table5
+table5 %>% unite(new, century, year) #new: 새로운 변수명, 뒤에 쓰는 변수들을 합
+#그런데 디폴트가 언더바로 변수들을 이음 -> sep=" "을 이용해 다르게 설정할 수 있다
+table5 %>% unite(new, century, year, sep="")
+
+
+##Missing values
+stocks <- tibble( year = c(2015, 2015, 2015, 2015, 2016, 2016, 2016), 
+                  qtr = c( 1, 2, 3, 4, 2, 3, 4), 
+                  return = c(1.88, 0.59, 0.35, NA, 0.92, 0.17, 2.66) )
+stocks
+#2015년 4분기: explicitly missing :NA값
+#2016년 1분기: implicitly missing :아예 자료 자체가 없는 값
+#spread를 이용해 테이블을 새로 만든다
+stocks %>% spread(qtr, return)
+
+#missing data 제거하기
+stocks %>% spread(year, return) %>%
+  gather(year, return, `2015`,`2016`, na.rm=TRUE)
+
+#complete: implicitly/explicitly missing을 다 파악가능
+treatment <- tribble( 
+  ~ person, ~ treatment, ~response, 
+  "Derrick Whitmore", 1, 7, 
+  NA, 2, 
+  10, NA, 
+  3, 9, 
+  "Katherine Burke", 1, 4 )
+treatment
+#NA값을 LOCF 규칙에 따라 채우기 -> fill() 함수
+treatment %>% fill(person)
