@@ -1,0 +1,116 @@
+###10/4 빅데이터###
+
+library(tidyverse)
+
+df <- data.frame(x=1:3, y=1:3, colour=c(1,3,5))
+df
+#세가지 color를 각각 다른 색으로 -> colour 변수를 숫자가 아닌 문자로 인식하도록 factor화함.
+ggplot(df, aes(x, y, colour=factor(colour)))+geom_point()
+
+ggplot(df, aes(x, y, colour=colour))+geom_line()+geom_point()
+#x변수 순서대로 sorting해서 이음. 
+#color가 연속으로 들어가있음 : 맨처음점부터 그 다음 점 전까지 같은색으로 나옴.
+
+ggplot(df, aes(x, y, colour=factor(colour)))+geom_line()+geom_point()
+#colour변수가 factor화 -> 그룹처럼 작동을 함. 
+
+#factor화된 세 그룹 선으로 잇기
+ggplot(df, aes(x, y, colour=factor(colour)))+geom_point()+geom_line(aes(group=1), size=2)
+#line에 그룹을 지정하는데, 1이라는 하나의 그룹으로 묶어줌. => 세 점이 한 그룹이 됨.
+#group=1로 하든 group=3으로 하든 하나의 그룹을 만든 것이므로 결과는 똑같이 나온다.
+
+ggplot(df, aes(x, y, colour=factor(colour)))+geom_line(aes(group=1), size=2)
+#line의 size= 선의 굵기. (point의 사이즈는 점의 크기)
+
+df1 <- data.frame(x=1:6, y=1:6, colour=c(1,1,3,3,5,5))
+
+ggplot(df1, aes(x, y, colour=factor(colour)))+geom_line()
+#colour변수에서 1,2번, 3,4번, 5,6번이 같은 숫자로 같은 그룹으로 묶여있음.
+#따라서 1,2번/ 3,4번/ 5,6번이 각각 연결되어있다.
+
+ggplot(df1, aes(x, y, colour=factor(colour)))+geom_line(size=2)+geom_point(size=5)
+#ggplot은 geom_point하면 포인트를 안을 채운다. (R 내장함수 plot으로 그리면 빈 점을 그림)
+
+#점 모양 바꾸기 -> geom_point에서 shape으로 설정.
+ggplot(df1, aes(x, y, colour=factor(colour)))+geom_line(size=2)+
+  geom_point(size=5, shape=3)
+ggplot(df1, aes(x, y, colour=factor(colour)))+geom_line(size=2)+
+  geom_point(size=5, shape="@")
+#aes mapping안에서 shape을 지정하면 그룹별로 다른 모양을 지정해줌.
+ggplot(df1, aes(x, y, colour=factor(colour)))+geom_line(size=2)+
+  geom_point(size=5, aes(shape=factor(colour)))
+#이때 shape이 지정하는 aes mapping은 연속형이면 에러남. 꼭 factor화 해준다.
+#(모양을 연속으로 표현할 수는 없기 때문!)
+
+#fill 옵션
+
+ggplot(mpg, aes(class))+geom_bar()
+#bar들이 떨어져있음.
+
+#mpg의 class bar chart에 drv에 대한 정보도 표현하고자 할 때.
+#먼저 table 확인
+table(mpg$class, mpg$drv)
+ggplot(mpg, aes(class, fill=drv))+geom_bar()
+#class에 대한 bar chart막대를 drv별로 색깔을 다르게 해서 나눠줌.
+
+#theme 함수 이용 => x축의 text를 바꿈 : element_text사용 -> angle을 45도로
+ggplot(mpg, aes(class, fill=drv))+geom_bar()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+
+
+#contour plot. faithfuld 사용
+faithfuld
+ggplot(faithfuld, aes(eruptions, waiting))+
+  geom_contour(aes(z=density, colour=..level..))
+#z : 높이변수. -> 높이변수로 density를 사용한다.
+#색깔로 높이를 표현. ..은 내부변수? 를뜻한다는데 잘 모르겠따.
+
+#격자로 나누어서 density를 나타냄.
+ggplot(faithfuld, aes(eruptions, waiting))+
+  geom_raster(aes(fill=density))
+#fill : 연속변수가 들어가면 scale로, 범주형이면 범주별로 다른색깔로 나타낸다.
+
+ggplot(faithfuld, aes(eruptions, waiting))+
+  geom_point(aes(size=density))
+#density에 따라 점 크기가 달라짐.
+
+#자료가 커서 small이라는 자료를 따로 만들기: faithfuld의 10분의 1만 뽑아냄.
+small <- faithfuld[seq(1, nrow(faithfuld), by=10),]
+ggplot(small, aes(eruptions, waiting))+geom_point(aes(size=density))
+#점이 겹쳐있는 부분들을 더 자세히 보기위해 투명도를 낮춤 -> alpha 사용.
+ggplot(small, aes(eruptions, waiting))+geom_point(aes(size=density), alpha=1/3)
+ggplot(small, aes(eruptions, waiting))+
+  geom_point(aes(size=density), alpha=1/3) +scale_size_area()
+
+
+#revealing uncertainty
+df <- data.frame(x=1:3, y=c(18, 11, 16), se=c(1.2, 0.5, 1.0))
+df
+base <- ggplot(df, aes(x, y, ymin=y-se, ymax=y+se))
+
+base+geom_crossbar()
+base+geom_pointrange()
+base+geom_errorbar()
+base+geom_linerange()
+
+base+geom_smooth(stat="identity")
+#stat="identity" -> 다른거 계산하지 말고 우리가 준 대로 ymin이랑 ymax 맞게 그려라.
+
+base+geom_ribbon()
+
+
+#weighted data : midwest 자료 이용
+midwest
+
+#먼저 unweighted
+ggplot(midwest, aes(percwhite, percbelowpoverty))+
+  geom_point(alpha=0.5)
+ggplot(midwest, aes(percwhite, percbelowpoverty))+
+  geom_point(aes(size=poptotal/1000000),alpha=0.5)
+
+
+#weight by population부터 pdf보고 하기..... 놓쳤어.....
+
+
+#pdf에 없는 내용
+#마지막코딩에 facet_wrap(~inmetro) 추가하기
