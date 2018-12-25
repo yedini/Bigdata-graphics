@@ -1,0 +1,159 @@
+##11/15 빅데이터###
+
+library(tidyverse)
+library(nycflights13)
+
+
+##Relational data##
+
+
+#nycflights13 테이블들의 primary key들
+airlines %>% count(carrier) %>% filter(n>1)
+#여기서 아무것도 안나오면 airlines의 primary key로 쓸 수 있음.
+
+airports %>% count(faa) %>% filter(n>1)
+
+#이렇게 하면 나오면 안되는데.. 왜나오지...
+weather %>% count(year, month, day, hour, origin) %>% filter(n>1)
+
+flights %>% count(year, month, day, flight) %>% filter(n>1)
+# => 결과값이 나오므로 날짜+flight 조합도 primary key가 될 수 없음.
+#변수의 combination으로도 primary key를 만들 수 없는 경우도 있다.
+
+
+#mutating joins : key-이어주는 변수
+
+
+flights2 <- flights %>%
+  select(year:day, hour, origin, dest, tailnum, carrier)
+flights2
+
+flights2 %>% left_join(airlines, by="carrier") # by: 양쪽에 carrier가 같은 것끼리 붙여라
+
+#위의 식과 같은 작업 : name이라는 변수를 mutate 이용해서 새로 만듦.
+flights2 %>% mutate(name=airlines$name[match(carrier, airlines$carrier)])
+
+
+#조인 이해하기
+x <- tribble(~key, ~val_x,
+             1, "x1",
+             2, "x2",
+             3, "x3")
+y <- tribble(~key, ~val_y,
+             1, "y1",
+             2, "y2",
+             4, "y3")
+
+x ; y
+
+#outer join- left, right, full이 있음. left는 왼쪽에있는건 다, right는 오른쪽에 있는건 다, full은 전부
+left_join(x, y, by="key") #left는 by가 없어도 괜찮음.
+right_join(x, y, by="key")
+inner_join(x,y) #겹치는것만 가져오기
+full_join(x,y) #다 가져오기
+
+
+
+##duplicate keys: key가 unique하지 않은 경우.ㅣ
+#  1. 한 table이 duplicated key를 가진 경우 => 1:다 대응의 관계
+x <- tribble(
+  ~key, ~val_x,
+  1, "x1",
+  2, "x2",
+  2, "x3",
+  1, "x4"
+)
+y <- tribble(
+  ~key, ~val_y,
+  1, "y1",
+  2, "y2"
+)
+
+x;y
+
+left_join(x,y)
+left_join(y,x)
+
+
+#   2. 두 table 모두 duplicated key를 갖는 경우. => dlyr는 모든 가능조합 표시.
+
+x <- tribble(
+  ~key, ~val_x,
+  1, "x1",
+  2, "x2",
+  2, "x3",
+  3, "x4"
+)
+y <- tribble(
+  ~key, ~val_y,
+  1, "y1",
+  2, "y2",
+  2, "y3",
+  3, "y4"
+)
+left_join(x,y)
+
+#define the key column => by="key"로 key를 정의함.
+#기본값을 null : table의 가능한 모든 변수를 이용 (=natural join!)
+
+
+#flights2와 weather join하기
+flights2 %>% left_join(weather)  
+#근데 이자료는 11월 3일 자료가 이상해서 별로 좋은 조인은아님...
+#조인 할 때는 한 쪽은 겹치는 변수가 primary key로 있는게 좋다
+
+#flights2에 비행기에 대한 정보 붙이기
+flights2 %>% left_join(planes)
+#이렇게하면 뒤에 자료들이 NA로 뜬다. flights에서의 year랑 planes에서의 year가 의미하는 바가 다른데 
+# (flights2는 출발시간, planes는 비행기 연식을 나타냄)
+#by 지정 안해서 자동으로 year변수가 조인되어서 NA값이 잔뜩 떠버림. 이럴 때는 by를 꼭 설정해주는게 좋다.
+flights2 %>% left_join(planes, by=c("tailnum"))
+#year.x는 flights2의 year, year.y는 planes의 year를 나타냄.
+
+#양쪽에서 조인하고싶은 변수 이름이 다른 경우 c(""="") 사용
+flights2 %>% left_join(airports, by=c("dest"="faa"))
+
+
+#filtering joins
+
+top_dest <- flights %>% count(dest, sort=TRUE) %>% head(10)
+top_dest
+flights %>% filter(dest %in% top_dest$dest)
+
+flights %>% semi_join(top_dest) #top_dest 에 속하는 dest가 있는 데이터를 가져와서 출력함
+
+flights %>% anti_join(planes, by="tailnum") #plane에 비행기 정보가 없는 tailnum에 대한 데이터
+flights %>% anti_join(planes, by="tailnum") %>% count(tailnum, sort=TRUE)
+
+
+##join problem
+
+#  1. 각 table에서 primary key가 되는 변수들을 지정해야 함.
+airports %>% count(alt, lon) %>% filter(n>1)
+    #각 값마다 2개이상인 값이 없다!
+
+#  2. primary key 값이 NA값이 없는지 확인.
+#  3. foreign key와 primary key가 잘 맞는지 확인 (anti_join함수 이용)
+#  4. NA값이 있으면 inner, outer join 이용에 주의할 것.
+
+
+##Set operations
+    # 하나의 복잡한 filter를 단순한 여러 조각으로 나누고 싶은 경우 종종 사용.
+
+df1 <- tribble(
+  ~x, ~y,
+  1, 1,
+  2, 1
+)
+df2 <- tribble(
+  ~x, ~y,
+  1, 1,
+  1, 2
+)
+
+df1 ; df2
+
+intersect(df1, df2)  #교집합
+union(df1, df2)   #합집합
+setdiff(df1, df2) #여집합 df1-df2
+
