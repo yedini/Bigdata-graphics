@@ -1,0 +1,127 @@
+###10/29 빅데이터###
+
+#취소되지 않은 (NA가 아닌) 도착시간과 출발시간만 다루기
+not_cancelled <- flights %>%
+  filter(!is.na(arr_delay), !is.na(arr_delay))
+not_cancelled
+#날짜별로 묶어서 지연시간의 통계내기
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarise(mean=mean(dep_delay))
+
+delays <- not_cancelled %>%
+  group_by(tailnum) %>%
+  summarise(delay=mean(arr_delay))
+delays
+#지연시간의 분포 보기
+ggplot(delays, aes(delay))+geom_freqpoly()
+
+#300분 이상의 평균 delay를 가지는 비행기
+delays <- not_cancelled %>%
+  group_by(tailnum) %>%
+  summarise(delay=mean(arr_delay, na.rm=TRUE), n=n())
+delays
+ggplot(delays, aes(n,delay))+geom_point(alpha=0.1)
+#300이상인 건이 매우 적음을 알 수 있다.
+
+#비행건수가 25 이상만을 그림
+delays %>%
+  filter(n>25) %>%
+  ggplot(aes(n,delay))+geom_point(alpha=1/10)
+
+
+##Useful summary functions : mean, median, sd 등등
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarise(avg_delay1=mean(arr_delay), avg_delay2=mean(arr_delay[arr_delay>0]))
+
+#not_cancelled 에서 날짜별로 정리해 도착 지연시간의 평균, 날짜별 연착 횟수, 
+#연착 없는 경우를 제외한 도작 지연시간의 평균, 연착=0을 제외한 도착지연시간의 합 보기
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarise(avg_delay1=mean(arr_delay),
+            n=n(),
+            avg_delay2=mean(arr_delay[arr_delay>0]),
+            n_delay2=sum(arr_delay>0))
+
+#not_cancelled를 도착별로 정리하고 거리의 표준편차를 구하여 내림차순으로 정렬하기
+not_cancelled %>%
+  group_by(dest) %>%
+  summarise(dist_sd=sd(distance)) %>%
+  arrange(desc(dist_sd))
+
+#일별로 가장 먼저, 가장 마지막에 비행기가 출발하는 시간은?
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarise(first=min(dep_time),
+            end=max(dep_time))
+# => first와 last 함수를 이용할 수도 있음!
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarise(first=first(dep_time),
+            end=last(dep_time))
+
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  mutate(r=min_rank(desc(dep_time))) %>% select(year, month, day, dep_time, r) %>%
+  filter(r %in% range(r))
+
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  mutate(r=min_rank(desc(dep_time))) %>%
+  filter(r %in% range(r))
+
+not_cancelled %>% group_by(dest) %>% summarise(n=n())
+
+## n_distinct : 겹치는건 안세기
+#가장 다양한 항공사에서 노선을 제공하고 있는 목적지는?
+not_cancelled %>% group_by(dest) %>%
+  summarise(carriers=n_distinct(carrier)) %>%
+  arrange(desc(carriers))
+
+#가장 많은 비행기가 제공되는 목적지는?
+not_cancelled %>%
+  count(dest)
+
+as.data.frame(table(not_cancelled$dest))
+#weighted count도 가능.
+not_cancelled %>%
+  count(tailnum, wt=distance)
+
+not_cancelled %>%
+  count(tailnum, wt=distance) %>%
+  arrange(desc(n))
+
+#5시 이전에 출발하는 비행기는 몇 대?
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarise(n_earlybird=sum(dep_time<500))
+
+#1시간 이상 지연된 비행기 비율은? ==> mean함수 사용.
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarise(delay_1h = mean(arr_delay>60))
+
+#여러 변수를 이용한 그룹 지정
+#날짜별 비행 수
+daily <- group_by(flights, year, month, day)
+(per_day <- summarise(daily, flights=n()))
+
+#여러 그룹으로 묶여있을 때 sum 이용 -> 가장 하위그룹이 묶임
+(per_month<-summarise(per_day, flights1=sum(flights)))
+
+#그룹 해제 -> ungroup
+daily %>%
+  ungroup() %>%
+  summarise(flights=n())
+
+#날별로 줄세우기
+flights %>% group_by(year, month, day) %>%
+  mutate(delay_rank = rank(desc(arr_delay)))
+
+flights %>% group_by(year, month, day) %>%
+  mutate(delay_rank = rank(desc(arr_delay))) %>%
+  select(year, month, day, arr_delay, delay_rank)
+
+flights %>% group_by(year, month, day) %>%
+  filter(rank(desc(arr_delay))>10)
