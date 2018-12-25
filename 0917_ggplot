@@ -1,0 +1,93 @@
+#####9/17 빅데이터#####
+
+
+library(tidyverse)
+mpg
+#mpg: ggplot2안에 있는 데이터
+#데이터프레임인 iris와 달리, mpg는 dataframe에 tibble이 씌워져 있음 -> 한번에 더 많은 정보를 줌.
+# A tibble: 234 x 11 -> data 234개, 변수 11개
+#dbl: double의 약자. 실수라고 보면 됨.
+class(mpg)
+
+ggplot(mpg, aes(x=displ, y=hwy)) + geom_point()  #기본 산점도 그리기
+#ggplot(data.frame, aes(x=x축변수, y=y축변수)) : 요기까지가 기본
+# + geom_point() : 그 안을 점 찍는것으로 채운다. +가 층을 붙인 것->복잡한 데이터를 예쁘게 표현할 수 있게 해줌.
+#aes: aesthetic mapping. 두개의 argument가 기본으로 들어감.
+#ggplot, aes, geom_point 총 3개의 함수가 쓰였다.
+
+summary(mpg)
+summary(as.data.frame(mpg))
+summary(mpg$class)
+summary(factor(mpg$class))
+#aes에서는 color, size, shape이나 기타 aesthetic attributes를 결정한다.
+#점들에 색깔넣ㄱㄱ기
+#class에 따라 다른 색깔을 넣어준다.
+ggplot(mpg, aes(x=displ, y=hwy, color=class))+geom_point()
+
+#점 모양 다르게만들기
+table(mpg$drv)
+#drv에 따라 다른 모양을 사용해 그래프를 그린다.
+ggplot(mpg, aes(x=displ, y=hwy, shape=drv))+geom_point()
+
+table(mpg$cyl)
+ggplot(mpg, aes(x=displ, y=hwy, size=cyl))+geom_point()
+ggplot(mpg, aes(x=displ, y=hwy, size=as.factor(cyl)))+geom_point()
+
+
+ggplot(mpg, aes(x=displ, y=hwy, shape=drv, color=drv))+geom_point()
+ggplot(mpg, aes(x=displ, y=hwy, shape=drv, color=class))+geom_point()
+
+
+
+
+ggplot(mpg, aes(x=displ, y=hwy, color=class))+geom_point()
+
+##Facetting: 한 변수의 데이터별 분포를 각각의 그래프로 보여줌.
+# facet_wrap() 함수를 + 형태로 연결한다.
+ggplot(mpg, aes(x=displ, y=hwy))+geom_point()+facet_wrap(~class)
+ggplot(mpg, aes(x=displ, y=hwy,color=class))+geom_point()+facet_wrap(~class)
+
+
+##다양한 geom들
+
+#하나의 연속변수:히스토그램
+ggplot(mpg, aes(x=hwy))+geom_histogram()
+ggplot(mpg, aes(x=hwy))+geom_histogram(binwidth=2.5)
+
+#frequency polygons
+ggplot(mpg, aes(x=hwy))+geom_freqpoly()
+ggplot(mpg, aes(x=hwy))+geom_freqpoly(binwidth=2.5)
+
+
+#하나의 범주형변수-bar charts
+table(mpg$class)
+ggplot(mpg, aes(x=class))+geom_bar()
+
+drugs <- data.frame(drug=c("a","b","c"), effect=c(4.2, 9.7, 6.1))
+drugs
+ggplot(drugs, aes(drug, effect))+geom_bar(stat="identity")
+ggplot(drugs, aes(drug, effect))+geom_point()
+
+#뭘 먼저 option으로 추가하냐에 따라 그림이 앞으로가거나 뒤로 감
+#이 경우 포인트가 bar의 위에 찍힘
+ggplot(drugs, aes(drug, effect))+geom_bar(stat="identity")+geom_point()
+#이 경우에는 bar가 포인트 위에 그려짐.
+ggplot(drugs, aes(drug, effect))+geom_point()+geom_bar(stat="identity")
+
+
+
+#하나의 범주형 변수와 하나의 연속변수
+ggplot(mpg, aes(drv, hwy))+geom_point()
+#boxplot: summary statistics를 이용하여 상자그림을 그림.
+ggplot(mpg, aes(drv, hwy))+geom_boxplot()
+ggplot(mpg, aes(drv, hwy))+geom_boxplot()+geom_point()
+#jitter: x축으로 random noise를 더해서 겹쳐져서 그려지지 않게 함.
+ggplot(mpg, aes(drv, hwy))+geom_jitter()
+ggplot(mpg, aes(drv, hwy))+geom_boxplot()+geom_jitter()
+#자료가 어디 모여있는지 좀 더 정확히 파악할 수 있음.
+ggplot(mpg,aes(drv,hwy))+geom_violin()
+
+#drv별로 freqpoly를 따로 그려줌.
+ggplot(mpg,aes(displ, colour=drv))+geom_freqpoly(binwidth=0.5)
+#linetype=drv : drv 데이터별로 선의 모양을 다르게 그려줌.
+ggplot(mpg,aes(displ, linetype=drv))+geom_freqpoly(binwidth=0.5)
