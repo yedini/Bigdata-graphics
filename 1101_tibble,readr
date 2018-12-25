@@ -1,0 +1,96 @@
+##Tibble: data.frame인데 좀 더 다루기 쉽게 변형되어 있음.
+#데이터를 쭉 늘어놓는 대신 정리해서 보여줌. => 큰 데이터 전체를 볼 때 그 전 히스토리를 다 채워버리는 것 방지
+#기존 자료를 tibble로 만들기: as_tibble()
+as_tibble(iris)
+
+#tibble 만들기
+tibble(x=1:5,
+       y=1,
+       z=x^2+y)
+
+#data.frame과의 가장 큰 차이점: character가 factor로 바뀌지 않는다!!
+
+tb <- tibble(
+  `:)` = "smile",
+  ` ` ="space",
+  `2000`= "number"
+)
+#변수 양쪽에 달려있는 것은 백슬래시!!!
+#data.frame의 변수는 항상 문자로 시작해야 하는데 
+#tibble에서는 `(tab위에거) 또는 작은따옴표 '를 이용하면 숫자를 이용할 수 있다!
+tb
+
+#tb에서 smile만 빼기
+tb$`:)`
+
+#tribble : SAS같이 자료입력 하기.
+tribble(
+  ~x, ~y, ~z,
+  #--/--/----    : 요건 그냥 글자가 여깄다 하는거. 빼고 돌려도 됨.
+  "a", 2, 3.6,
+  "b", 1, 8.5
+)
+
+
+##Printing
+#tibble 데이터를 출력했을 때 잘려서 안나오는 변수를 보고싶을 때
+A <- tibble(
+  a= lubridate::now() + runif(1e3)*86400, #0부터 1까지 뽑은 1000개의 수를 86400(하루의 초단위)로 scaling해줌.
+  b= lubridate::today() + runif(1e3)*30,  #runif : uniform random number를 뽑아라
+  c=1:1e3,
+  d=runif(1e3),
+  e=sample(letters, 1e3, replace=TRUE)
+)
+#now: 지금시간을 가져옴.
+A
+
+print(A, n=20) #A에서 위에 20개를 프린트해라.
+
+#n, width 옵션을 사용해 자료 전체를 볼 수 있음.
+flights%>% print(n=5, width=Inf) #row는 5개만, 변수는 모두 보여조라.
+#모든 자료를 엑셀의 형태로 보고싶으면 View를 이용해 새 창 띄우기.
+View(flights)
+
+#options함수를 이용해 패키지의 설정 자체를 바꿀 수도 있다. 근데 그닥 권하진 않음. (pdf 참고)
+
+#set.seed  : seed number 세팅
+set.seed(20181101)
+df <- tibble(x=runif(5), y=runif(5))
+df
+df[["x"]]
+[1] 0.7789209 0.7710086 0.5000731 0.6163632 0.6183271
+df$x
+[1] 0.7789209 0.7710086 0.5000731 0.6163632 0.6183271
+#한 열을 뽑을 때 data.frame은 전체변수가 아니면 벡터를 출력하는데 tibble은 하나의 변수여도 tibble형태로 출력.
+df[,"x"]
+# A tibble: 5 x 1
+x
+<dbl>
+  1 0.779
+2 0.771
+3 0.500
+4 0.616
+5 0.618
+
+
+df.tbl <- tibble( xx = runif(5), y = rnorm(5) ) 
+df.DF <- data.frame( xx = runif(5), y = rnorm(5) )
+df.tbl
+df.DF
+
+#partial matching : 데이터프레임은 입력한 변수가 존재하지 않을 때 일부만 겹치면 뽑아냄. tibble은 이걸 막아놨다!!
+df.DF$x
+[1] 0.31311762 0.94363788 0.92070164 0.05881271 0.70900576
+df.tbl$x
+NULL
+Warning message:
+  Unknown or uninitialised column: 'x'.
+
+
+
+##readr 패키지
+#data import
+#tidyverse의 read_csv와 read.csv 차이 확인하기
+A <- read.csv("heights.csv")
+B <- read_csv("heights.csv")
+#read_csv 실행시키면 각 변수의 이름과 type을 보여준다.
